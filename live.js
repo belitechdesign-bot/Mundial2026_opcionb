@@ -1,4 +1,4 @@
-const START='2026-06-11', END='2026-07-19', TZ='America/Mexico_City';
+'2026-06-11', END='2026-07-19', TZ='America/Mexico_City';
 const ESPN_BASE='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
 const FLAG={Mexico:'🇲🇽','South Africa':'🇿🇦','Korea Republic':'🇰🇷','South Korea':'🇰🇷',Czechia:'🇨🇿',Brazil:'🇧🇷',Belgium:'🇧🇪',Argentina:'🇦🇷',France:'🇫🇷',Germany:'🇩🇪',Spain:'🇪🇸',Portugal:'🇵🇹',England:'🏴',USA:'🇺🇸',Canada:'🇨🇦',Japan:'🇯🇵',Morocco:'🇲🇦',Uruguay:'🇺🇾',Colombia:'🇨🇴',Uzbekistan:'🇺🇿'};
 const $=s=>document.querySelector(s); let tab=localStorage.tab||'today'; let DATA=JSON.parse(localStorage.wc26||'{"events":[],"updated":null}');
@@ -20,4 +20,27 @@ function groupTables(){let teams={}; DATA.events.filter(e=>e.completed&&e.home.s
 function renderGroups(){let by=groupTables(); let html=Object.keys(by).sort().map(g=>`<div class="card"><div class="title">${g}</div><table class="tbl"><tr><th>Equipo</th><th>Pts</th><th>PJ</th><th>DG</th><th>GF</th></tr>${by[g].map((t,i)=>`<tr><td>${i<2?'✅':i===2?'🟡':''} ${flag(t.name)} ${t.name}</td><td class="num">${t.pts}</td><td class="num">${t.p}</td><td class="num">${t.gd}</td><td class="num">${t.gf}</td></tr>`).join('')}</table></div>`).join(''); $('#app').innerHTML=html||'<div class="card empty">Las tablas aparecerán cuando haya resultados finales cargados.</div>'}
 function renderBracket(){let by=groupTables(); let winners=[],seconds=[],thirds=[]; Object.keys(by).forEach(g=>{if(by[g][0])winners.push(by[g][0]); if(by[g][1])seconds.push(by[g][1]); if(by[g][2])thirds.push(by[g][2])}); thirds.sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf); let best=thirds.slice(0,8); $('#app').innerHTML=`<div class="grid two"><div class="card"><div class="title">Clasificados provisionales</div><div class="meta">Regla 2026: pasan 1.º y 2.º de cada grupo + 8 mejores terceros. Los criterios calculados aquí: puntos, diferencia, goles a favor. Fair play/ranking se dejan como desempate manual.</div><div class="title">Mejores terceros</div>${best.length?best.map((t,i)=>`<div class="krow"><span>${i+1}. ${flag(t.name)} ${t.name} <span class="mut">${t.group}</span></span><b>${t.pts} pts</b></div>`).join(''):'<div class="empty">Aún no hay terceros calculables.</div>'}</div><div class="card"><div class="title">Llaves 16vos</div><div class="meta">Se llenan conforme FIFA/ESPN confirme cruces oficiales. La app mantiene el cálculo de clasificados; los cruces exactos con terceros se deben sincronizar con la matriz oficial publicada.</div><div class="bracket"><div class="slot">1A vs 3C/E/F/H/I</div><div class="slot">1B vs 3E/F/G/I/J</div><div class="slot">1C vs 3A/B/F/H/I</div><div class="slot">1D vs 3B/E/F/I/J</div></div></div></div>`}
 function renderStats(){let scorers={},cards={}; DATA.events.forEach(e=>{(e.scorers||[]).forEach(s=>{let n=s.replace(/.*?:/,'').replace(/\d+'.*/,'').trim(); if(n)scorers[n]=(scorers[n]||0)+1});(e.cards||[]).forEach(s=>{let n=s.replace(/.*?:/,'').replace(/\d+'.*/,'').trim(); if(n)cards[n]=(cards[n]||0)+1})}); const list=o=>Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([n,v],i)=>`<div class="krow"><span>${i+1}. ${n}</span><b>${v}</b></div>`).join('')||'<div class="empty">Sin datos todavía.</div>'; $('#app').innerHTML=`<div class="grid two"><div class="card"><div class="title">Goleadores</div>${list(scorers)}</div><div class="card"><div class="title">Tarjetas</div>${list(cards)}</div></div>`}
-$('#refresh').onclick=refresh; $('#demo').onclick=demo; $('#clear').onclick=()=>{localStorage.removeItem('wc26');DATA={events:[],updated:null};render()}; document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()}); render();
+function byText(txt){
+  return [...document.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase().includes(txt));
+}
+
+const btnRefresh = document.querySelector('#refresh') || byText('actualizar');
+const btnDemo = document.querySelector('#demo') || byText('ejemplo');
+const btnClear = document.querySelector('#clear') || byText('limpiar');
+
+if(btnRefresh) btnRefresh.onclick = refresh;
+if(btnDemo) btnDemo.onclick = demo;
+if(btnClear) btnClear.onclick = () => {
+  localStorage.removeItem('wc26');
+  DATA = {events:[], updated:null};
+  render();
+};
+
+document.querySelectorAll('[data-tab]').forEach(b=>{
+  b.onclick = () => {
+    tab = b.dataset.tab;
+    render();
+  };
+});
+
+render();
